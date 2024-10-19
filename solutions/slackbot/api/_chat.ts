@@ -22,7 +22,7 @@ export async function sendGPTResponse(event: Event) {
     const gptResponse = await getGPTResponse(prompts)
 
     // Extract channel mentions from the GPT response
-    const channelMentions = gptResponse.choices[0].message.content.match(/<#[A-Z0-9]+\|[^>]+>/g);
+    const channelMentions = gptResponse.choices?.[0]?.message?.content?.match(/<#[A-Z0-9]+\|[^>]+>/g);
 
     if (channelMentions && channelMentions.length >= 2) {
       const sourceChannelMention = channelMentions[0];
