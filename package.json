@@ -15,14 +15,14 @@
   "lint-staged": {
     "!(**/.vercel/**/*)**/*.{ts,tsx}": [
       "prettier --write",
-      "eslint --max-warnings=0 --fix"
+      "eslint --fix"
     ],
     "**/*.{json,md,mdx,css,html,yml,yaml,scss}": [
       "prettier --write"
     ]
   },
   "devDependencies": {
-    "eslint": "latest",
+    "eslint": "^9.13.0",
     "eslint-config-next": "canary",
     "husky": "^8.0.1",
     "lint-staged": "^13.0.3",

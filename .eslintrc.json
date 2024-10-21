@@ -1,7 +1,15 @@
 {
-  "extends": "next/core-web-vitals",
+  "env": {
+    "browser": true,
+    "es2021": true
+  },
+  "extends": "eslint:recommended",
+  "parserOptions": {
+    "ecmaVersion": 12,
+    "sourceType": "module"
+  },
   "rules": {
-    "@next/next/no-html-link-for-pages": "off",
-    "import/no-anonymous-default-export": "off"
+    "no-console": "warn",
+    "quotes": ["error", "single"]
   }
 }

@@ -1,6 +1,5 @@
 import { WebClient } from '@slack/web-api'
 import { getGPTResponse, generatePromptFromThread } from './_openai'
-import axios from 'axios'
 
 const slack = new WebClient(process.env.SLACK_BOT_TOKEN)
 
@@ -10,35 +9,49 @@ type Event = {
   thread_ts?: string
 }
 
+export async function sendHTTPRequestUsingFetch(
+  url: string,
+  data: any
+): Promise<any> {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  })
+
+  const result = await response.json()
+  return result
+}
+
 export async function sendGPTResponse(event: Event) {
   const { channel, ts, thread_ts } = event
 
   try {
+    // Fetch the Slack conversation thread
     const thread = await slack.conversations.replies({
       channel,
       ts: thread_ts ?? ts,
       inclusive: true,
     })
 
+    // Extract the message prompts
     const prompts = await generatePromptFromThread(thread)
 
-    // Make an external API call (send the message to another Node.js API)
-    const externalApiResponse = await axios.post(
-      `${process.env.EXTERNAL_API_URL}`,
+    // Make the external API request using fetch
+    const apiResponse = await sendHTTPRequestUsingFetch(
+      'http://lead-source-api.kasawalkthrough.com/api/lead',
       {
         question: prompts.map((prompt) => prompt.content).join(' '),
       }
     )
 
-    // Use the response from the external API to post a message in Slack
-    const responseMessage =
-      externalApiResponse.data?.message || 'No response from external API'
-    const gptResponse = await getGPTResponse(prompts)
-
+    // Send the response back to Slack in the thread
     await slack.chat.postMessage({
       channel,
       thread_ts: ts,
-      text: `${gptResponse.choices[0].message.content}`,
+      text: apiResponse.message || 'No response from external API',
     })
   } catch (error) {
     if (error instanceof Error) {
