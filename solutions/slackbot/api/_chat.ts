@@ -48,7 +48,8 @@ export async function sendGPTResponse(event: Event) {
     // Extract the message prompts
     const prompts = await generatePromptFromThread(thread)
 
-    console.log('prompts', prompts, thread)
+    console.log('thread', thread)
+    console.log('prompts', prompts)
 
     // Make the external API request using fetch
     const apiResponse = await sendHTTPRequestUsingFetch(
