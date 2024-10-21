@@ -27,9 +27,19 @@ export async function sendHTTPRequestUsingFetch(
   return result
 }
 
-// Process and respond to app_mention events
+const processedEvents = new Set<string>() // Store processed events in memory
+
 export async function sendGPTResponse(event: Event) {
   const { channel, ts, thread_ts, user, bot_id } = event
+
+  // Check if the event was already processed
+  if (processedEvents.has(ts)) {
+    console.log('Event already processed, skipping.')
+    return
+  }
+
+  // Mark this event as processed
+  processedEvents.add(ts)
 
   // Check if the message was sent by a bot (including itself) to prevent loops
   if (bot_id) {

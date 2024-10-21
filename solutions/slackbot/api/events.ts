@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     if (requestType === 'event_callback') {
       const eventType = body.event.type
       if (eventType === 'app_mention') {
-        await sendGPTResponse(body.event)
+        sendGPTResponse(body.event).catch((error) => console.error(error))
         return new Response('Success!', { status: 200 })
       }
     }
