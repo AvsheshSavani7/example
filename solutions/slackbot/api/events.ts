@@ -23,19 +23,31 @@ export async function POST(request: Request) {
   const body = JSON.parse(rawBody)
   const requestType = body.type
 
+  // Handle Slack's URL verification challenge
   if (requestType === 'url_verification') {
     return new Response(body.challenge, { status: 200 })
   }
 
+  // Validate Slack's request
   if (await isValidSlackRequest(request, body)) {
     if (requestType === 'event_callback') {
       const eventType = body.event.type
+
+      // Handle the 'app_mention' event
       if (eventType === 'app_mention') {
-        sendGPTResponse(body.event).catch((error) => console.error(error))
+        // Wait for sendGPTResponse to finish before returning the response
+        try {
+          await sendGPTResponse(body.event)
+        } catch (error) {
+          console.error('Error in sendGPTResponse:', error)
+        }
+
+        // Return success only after processing the event
         return new Response('Success!', { status: 200 })
       }
     }
   }
 
+  // Default response for any other cases
   return new Response('OK', { status: 200 })
 }
