@@ -46,6 +46,7 @@ export async function sendGPTResponse(event: Event) {
         question: prompts.map((prompt) => prompt.content).join(' '),
       }
     )
+    console.log('apiResponse', apiResponse)
 
     // Send the response back to Slack in the thread
     await slack.chat.postMessage({
