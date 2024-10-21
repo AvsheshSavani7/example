@@ -33,12 +33,12 @@ export async function sendGPTResponse(event: Event) {
     // Use the response from the external API to post a message in Slack
     const responseMessage =
       externalApiResponse.data?.message || 'No response from external API'
-    // const gptResponse = await getGPTResponse(prompts)
+    const gptResponse = await getGPTResponse(prompts)
 
     await slack.chat.postMessage({
       channel,
       thread_ts: ts,
-      text: `${responseMessage}`,
+      text: `${gptResponse.choices[0].message.content}`,
     })
   } catch (error) {
     if (error instanceof Error) {
