@@ -52,7 +52,7 @@ export async function sendGPTResponse(event: Event) {
     await slack.chat.postMessage({
       channel,
       thread_ts: ts,
-      text: apiResponse.message || 'No response from external API',
+      text: apiResponse.entity || 'No response from external API',
     })
   } catch (error) {
     if (error instanceof Error) {
