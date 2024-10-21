@@ -15,7 +15,7 @@
   "lint-staged": {
     "!(**/.vercel/**/*)**/*.{ts,tsx}": [
       "prettier --write",
-      "eslint -c .eslintrc.json --no-eslintrc --no-ignore --max-warnings=0 --fix"
+      "eslint --max-warnings=0 --fix"
     ],
     "**/*.{json,md,mdx,css,html,yml,yaml,scss}": [
       "prettier --write"
