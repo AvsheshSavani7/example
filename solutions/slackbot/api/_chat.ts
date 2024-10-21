@@ -35,7 +35,7 @@ export async function sendGPTResponse(event: Event) {
         const messages = await readMessagesFromChannel(sourceChannelId);
 
         for (const message of messages) {
-          await postMessageToChannel(targetChannelId, message.text);
+          await postMessageToChannel(targetChannelId, message?.text);
         }
 
         // Inform about the transfer in the original channel
