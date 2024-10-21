@@ -41,7 +41,7 @@ export async function sendGPTResponse(event: Event) {
 
     // Make the external API request using fetch
     const apiResponse = await sendHTTPRequestUsingFetch(
-      'http://192.168.1.9:8082/api/lead',
+      'http://lead-source-api.kasawalkthrough.com/api/lead/chat/db',
       {
         question: prompts.map((prompt) => prompt.content).join(' '),
       }
