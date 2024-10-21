@@ -1,60 +1,84 @@
+import axios from 'axios'
 import { WebClient } from '@slack/web-api'
-import { getGPTResponse, generatePromptFromThread } from './_openai'
+// Define the type for the API response
+interface BotApiResponse {
+  status: boolean
+  entity?: string
+  message?: string
+}
 
-const slack = new WebClient(process.env.SLACK_BOT_TOKEN)
+interface BotMessage {
+  text: string
+  sender: string
+}
 
-type Event = {
+let api = 'http://lead-source-api.kasawalkthrough.com/api/lead'
+
+// Function to fetch response from another API
+export const fetchBotResponse = async (
+  userMessage: string
+): Promise<BotMessage> => {
+  try {
+    // Make the API call (replace `your-api-endpoint` with the actual API)
+    const response = await axios.post<BotApiResponse>(
+      `${process.env.API_URL}${api}`,
+      {
+        question: userMessage,
+      }
+    )
+
+    const data = response.data
+
+    // Check if the API returned a successful response
+    if (data.status) {
+      const botMessage = data?.entity || '' // Use your conversion logic here
+      return { text: botMessage, sender: 'bot' }
+    } else {
+      return {
+        text: data?.message || 'Sorry, something went wrong. Please try again.',
+        sender: 'bot',
+      }
+    }
+  } catch (error) {
+    // Handle any errors that occurred during the API call
+    return {
+      text: 'Error fetching bot response.',
+      sender: 'bot',
+    }
+  }
+}
+
+// Slack event type
+interface Event {
   channel: string
   ts: string
   thread_ts?: string
 }
-export async function sendGPTResponse(event: Event) {
+
+const slack = new WebClient(process.env.SLACK_BOT_TOKEN)
+
+export async function sendGPTResponse(event: Event): Promise<void> {
   const { channel, ts, thread_ts } = event
 
   try {
+    // Fetch the Slack thread
     const thread = await slack.conversations.replies({
       channel,
       ts: thread_ts ?? ts,
       inclusive: true,
     })
 
-    const prompts = await generatePromptFromThread(thread)
-    const gptResponse = await getGPTResponse(prompts)
+    const userMessage = thread.messages?.[0]?.text || ''
 
-    // Extract channel mentions from the GPT response
-    const channelMentions = gptResponse.choices?.[0]?.message?.content?.match(/<#[A-Z0-9]+\|[^>]+>/g);
+    // Fetch the bot response from the external API
+    const botResponse = await fetchBotResponse(userMessage)
 
-    if (channelMentions && channelMentions.length >= 2) {
-      const sourceChannelMention = channelMentions[0];
-      const targetChannelMention = channelMentions[1];
-
-      const sourceChannelId = await getChannelId(sourceChannelMention);
-      const targetChannelId = await getChannelId(targetChannelMention);
-
-      if (sourceChannelId && targetChannelId) {
-        const messages = await readMessagesFromChannel(sourceChannelId);
-
-        for (const message of messages) {
-          await postMessageToChannel(targetChannelId, message?.text);
-        }
-
-        // Inform about the transfer in the original channel
-        await slack.chat.postMessage({
-          channel,
-          thread_ts: ts,
-          text: `Messages transferred from ${sourceChannelMention} to ${targetChannelMention}.`,
-        });
-      } else {
-        throw new Error('Could not find one or both of the specified channels.');
-      }
-    } else {
-      // If no channel mentions found, just post the GPT response
-      await slack.chat.postMessage({
-        channel,
-        thread_ts: ts,
-        text: `${gptResponse.choices[0].message.content}`,
-      });
-    }
+    // Send the response back to Slack
+    await slack.chat.postMessage({
+      channel,
+      thread_ts: ts,
+      text: botResponse.text,
+    })
   } catch (error) {
     if (error instanceof Error) {
       await slack.chat.postMessage({
@@ -66,45 +90,7 @@ export async function sendGPTResponse(event: Event) {
   }
 }
 
-
-export async function readMessagesFromChannel(channelId: string, limit: number = 10) {
-  try {
-    const result = await slack.conversations.history({
-      channel: channelId,
-      limit: limit
-    });
-    return result.messages;
-  } catch (error) {
-    console.error('Error reading messages:', error);
-    throw error;
-  }
-}
-
-export async function postMessageToChannel(channelId: string, text: string) {
-  try {
-    await slack.chat.postMessage({
-      channel: channelId,
-      text: text
-    });
-  } catch (error) {
-    console.error('Error posting message:', error);
-    throw error;
-  }
-}
-
-async function getChannelId(channelMention: string): Promise<string | undefined> {
-  // Remove the < > characters from the channel mention
-  const channelName = channelMention.replace(/[<>]/g, '');
-  
-  try {
-    const result = await slack.conversations.list({
-      types: 'public_channel,private_channel'
-    });
-    
-    const channel = result.channels?.find(c => c.name === channelName.replace('#', '') || c.id === channelName);
-    return channel?.id;
-  } catch (error) {
-    console.error('Error getting channel ID:', error);
-    throw error;
-  }
+const persistMessages = (messages: BotMessage[]): void => {
+  // Implement your persistence logic here (e.g., save to a database)
+  console.log('Persisting messages:', messages)
 }
