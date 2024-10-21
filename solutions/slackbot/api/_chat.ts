@@ -39,6 +39,7 @@ export async function sendGPTResponse(event: Event) {
     // Extract the message prompts
     const prompts = await generatePromptFromThread(thread)
 
+    console.log('prompts', prompts, thread)
     // Make the external API request using fetch
     const apiResponse = await sendHTTPRequestUsingFetch(
       'http://lead-source-api.kasawalkthrough.com/api/lead/chat/db',
@@ -46,6 +47,7 @@ export async function sendGPTResponse(event: Event) {
         question: prompts.map((prompt) => prompt.content).join(' '),
       }
     )
+
     console.log('apiResponse', apiResponse)
 
     // Send the response back to Slack in the thread
