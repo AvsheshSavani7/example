@@ -4,7 +4,6 @@ import { sendGPTResponse } from './_chat'
 export const config = {
   maxDuration: 30,
 }
-const processedEvents = new Set<string>()
 
 async function isValidSlackRequest(request: Request, body: any) {
   const signingSecret = process.env.SLACK_SIGNING_SECRET!
@@ -18,6 +17,7 @@ async function isValidSlackRequest(request: Request, body: any) {
   const computedSignature = `v0=${hmac}`
   return computedSignature === slackSignature
 }
+
 export async function POST(request: Request) {
   const rawBody = await request.text()
   const body = JSON.parse(rawBody)
@@ -32,29 +32,22 @@ export async function POST(request: Request) {
   if (await isValidSlackRequest(request, body)) {
     if (requestType === 'event_callback') {
       const eventType = body.event.type
-      const eventId = body.event_id
 
-      // Return 200 OK immediately to prevent Slack from retrying
-      const response = new Response('Success!', { status: 200 })
+      // Handle the 'app_mention' event
+      if (eventType === 'app_mention') {
+        // Wait for sendGPTResponse to finish before returning the response
+        try {
+          await sendGPTResponse(body.event)
+        } catch (error) {
+          console.error('Error in sendGPTResponse:', error)
+        }
 
-      // Check if the event has already been processed
-      if (processedEvents.has(eventId)) {
-        console.log(`Event ${eventId} has already been processed, skipping.`)
-        return response
+        // Return success only after processing the event
+        return new Response('Success!', { status: 200 })
       }
-
-      // Add eventId to processed set to avoid processing it again
-      processedEvents.add(eventId)
-
-      // Process the event asynchronously
-      sendGPTResponse(body.event)
-        .then(() => console.log('Event processed successfully'))
-        .catch((error) => console.error('Error processing event:', error))
-
-      // Return 200 OK immediately
-      return response
     }
   }
 
+  // Default response for any other cases
   return new Response('OK', { status: 200 })
 }
