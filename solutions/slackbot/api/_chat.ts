@@ -55,7 +55,7 @@ export async function sendGPTResponse(event: Event) {
 
     // Make the external API request using fetch
     const apiResponse = await sendHTTPRequestUsingFetch(
-      'http://lead-source-api.kasawalkthrough.com/api/lead/chat/db',
+      'http://lead-source-api.kasawalkthrough.com/api/lead/chat/zoho',
       {
         question: prompts?.[0]?.content,
       }
