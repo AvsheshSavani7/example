@@ -1,14 +1,10 @@
 import crypto from 'crypto'
 import { sendGPTResponse } from './_chat'
 
-// In-memory cache for tracking processed events (you can use a DB or Redis for persistence)
-const processedEventIds = new Set<string>()
-
 export const config = {
   maxDuration: 30,
 }
 
-// Function to validate Slack request
 async function isValidSlackRequest(request: Request, body: any) {
   const signingSecret = process.env.SLACK_SIGNING_SECRET!
   const timestamp = request.headers.get('X-Slack-Request-Timestamp')!
@@ -21,6 +17,7 @@ async function isValidSlackRequest(request: Request, body: any) {
   const computedSignature = `v0=${hmac}`
   return computedSignature === slackSignature
 }
+const processedEvents = new Set<string>()
 
 export async function POST(request: Request) {
   const rawBody = await request.text()
@@ -33,39 +30,31 @@ export async function POST(request: Request) {
   }
 
   // Validate Slack's request
+  // Validate Slack's request
   if (await isValidSlackRequest(request, body)) {
     if (requestType === 'event_callback') {
       const eventType = body.event.type
-      const eventId = body.event_id // Unique event ID from Slack
-      const retryNum = request.headers.get('X-Slack-Retry-Num') // Check if it's a retry
+      const eventId = body.event_id
 
-      // Check if we've already processed this event
-      if (processedEventIds.has(eventId)) {
+      // Return 200 OK immediately to prevent Slack from retrying
+      const response = new Response('Success!', { status: 200 })
+
+      // Check if the event has already been processed
+      if (processedEvents.has(eventId)) {
         console.log(`Event ${eventId} has already been processed, skipping.`)
-        return new Response('Event already processed', { status: 200 })
-      }
-
-      // Mark this event as processed
-      processedEventIds.add(eventId)
-
-      // Handle the 'app_mention' event
-      if (eventType === 'app_mention') {
-        // Log retry attempts
-        if (retryNum) {
-          console.log(`Retry attempt #${retryNum} for event ${eventId}`)
-        }
-
-        // Acknowledge the event immediately
-        const response = new Response('Success!', { status: 200 })
-
-        // Process the event asynchronously
-        sendGPTResponse(body.event).catch((error) =>
-          console.error(`Error in sendGPTResponse: ${error}`)
-        )
-
-        // Return the acknowledgment response
         return response
       }
+
+      // Add eventId to processed set to avoid processing it again
+      processedEvents.add(eventId)
+
+      // Process the event asynchronously
+      sendGPTResponse(body.event)
+        .then(() => console.log('Event processed successfully'))
+        .catch((error) => console.error('Error processing event:', error))
+
+      // Return 200 OK immediately
+      return response
     }
   }
 
