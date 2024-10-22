@@ -32,24 +32,22 @@ export async function POST(request: Request) {
   if (await isValidSlackRequest(request, body)) {
     if (requestType === 'event_callback') {
       const eventType = body.event.type
-      const eventId = body.event_id
 
-      // Immediately return 200 OK to prevent Slack retries
-      const response = new Response('Success!', { status: 200 })
-
-      // Process the event asynchronously
-      ;(async () => {
+      // Handle the 'app_mention' event
+      if (eventType === 'app_mention') {
+        // Wait for sendGPTResponse to finish before returning the response
         try {
-          await sendGPTResponse(body.event) // Ensure this runs
+          await sendGPTResponse(body.event)
         } catch (error) {
           console.error('Error in sendGPTResponse:', error)
         }
-      })()
 
-      // Return 200 OK to Slack immediately
-      return response
+        // Return success only after processing the event
+        return new Response('Success!', { status: 200 })
+      }
     }
   }
 
+  // Default response for any other cases
   return new Response('OK', { status: 200 })
 }
