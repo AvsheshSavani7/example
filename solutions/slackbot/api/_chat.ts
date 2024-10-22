@@ -27,9 +27,10 @@ export async function sendHTTPRequestUsingFetch(
 
 export async function sendGPTResponse(event: Event) {
   const { channel, ts, thread_ts } = event
-  console.log('HELLO')
+  console.log('Event Received:', event)
 
   try {
+    console.log('Fetching Slack conversation thread...')
     // Fetch the Slack conversation thread
     const thread = await slack.conversations.replies({
       channel,
