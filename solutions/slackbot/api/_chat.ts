@@ -44,7 +44,7 @@ export async function sendGPTResponse(event: Event) {
     const apiResponse = await sendHTTPRequestUsingFetch(
       'http://lead-source-api.kasawalkthrough.com/api/lead/chat/db',
       {
-        question: prompts.map((prompt) => prompt.content).join(' '),
+        question: prompts?.[0]?.content,
       }
     )
 
