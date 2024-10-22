@@ -38,6 +38,16 @@ export async function sendGPTResponse(event: Event) {
       inclusive: true,
     })
 
+    // Check if the thread is null or undefined
+    if (!thread || !thread.messages) {
+      console.error(
+        'No messages found in the thread or invalid thread:',
+        thread
+      )
+    } else {
+      console.log('Thread Fetched:', thread)
+    }
+
     // Extract the message prompts
     const prompts = await generatePromptFromThread(thread)
 
