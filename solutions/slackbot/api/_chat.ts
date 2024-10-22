@@ -40,6 +40,7 @@ export async function sendGPTResponse(event: Event) {
     const prompts = await generatePromptFromThread(thread)
 
     console.log('prompts', prompts, thread)
+
     // Make the external API request using fetch
     const apiResponse = await sendHTTPRequestUsingFetch(
       'http://lead-source-api.kasawalkthrough.com/api/lead/chat/db',
@@ -57,12 +58,11 @@ export async function sendGPTResponse(event: Event) {
       text: apiResponse.entity || 'No response from external API',
     })
   } catch (error) {
-    if (error instanceof Error) {
-      await slack.chat.postMessage({
-        channel,
-        thread_ts: ts,
-        text: `<@${process.env.SLACK_ADMIN_MEMBER_ID}> Error: ${error.message}`,
-      })
-    }
+    console.error('Error processing event:', error)
+    await slack.chat.postMessage({
+      channel,
+      thread_ts: ts,
+      text: `<@${process.env.SLACK_ADMIN_MEMBER_ID}> Error: }`,
+    })
   }
 }

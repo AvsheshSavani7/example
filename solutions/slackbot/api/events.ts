@@ -18,8 +18,6 @@ async function isValidSlackRequest(request: Request, body: any) {
   return computedSignature === slackSignature
 }
 
-const processedEvents = new Set<string>()
-
 export async function POST(request: Request) {
   const rawBody = await request.text()
   const body = JSON.parse(rawBody)
@@ -34,33 +32,24 @@ export async function POST(request: Request) {
   if (await isValidSlackRequest(request, body)) {
     if (requestType === 'event_callback') {
       const eventType = body.event.type
-      const eventId = body.event_id // Unique event ID from Slack
+      const eventId = body.event_id
 
-      // Check if this event has already been processed
-      if (processedEvents.has(eventId)) {
-        console.log(`Event ${eventId} already processed, skipping.`)
-        return new Response('Event already processed', { status: 200 })
-      }
+      // Immediately return 200 OK to prevent Slack retries
+      const response = new Response('Success!', { status: 200 })
 
-      // Add event to processed set
-      processedEvents.add(eventId)
-
-      // Handle the 'app_mention' event
-      if (eventType === 'app_mention') {
-        // Immediately return a 200 OK to Slack
-        const response = new Response('Success!', { status: 200 })
-
-        // Process the event asynchronously
-        sendGPTResponse(body.event).catch((error) =>
+      // Process the event asynchronously
+      ;(async () => {
+        try {
+          await sendGPTResponse(body.event) // Ensure this runs
+        } catch (error) {
           console.error('Error in sendGPTResponse:', error)
-        )
+        }
+      })()
 
-        // Return 200 OK immediately
-        return response
-      }
+      // Return 200 OK to Slack immediately
+      return response
     }
   }
 
-  // Default response for any other cases
   return new Response('OK', { status: 200 })
 }
