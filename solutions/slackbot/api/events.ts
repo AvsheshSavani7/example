@@ -4,6 +4,7 @@ import { sendGPTResponse } from './_chat'
 export const config = {
   maxDuration: 30,
 }
+const processedEvents = new Set<string>()
 
 async function isValidSlackRequest(request: Request, body: any) {
   const signingSecret = process.env.SLACK_SIGNING_SECRET!
@@ -17,8 +18,6 @@ async function isValidSlackRequest(request: Request, body: any) {
   const computedSignature = `v0=${hmac}`
   return computedSignature === slackSignature
 }
-const processedEvents = new Set<string>()
-
 export async function POST(request: Request) {
   const rawBody = await request.text()
   const body = JSON.parse(rawBody)
@@ -29,7 +28,6 @@ export async function POST(request: Request) {
     return new Response(body.challenge, { status: 200 })
   }
 
-  // Validate Slack's request
   // Validate Slack's request
   if (await isValidSlackRequest(request, body)) {
     if (requestType === 'event_callback') {
@@ -58,6 +56,5 @@ export async function POST(request: Request) {
     }
   }
 
-  // Default response for any other cases
   return new Response('OK', { status: 200 })
 }

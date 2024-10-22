@@ -7,8 +7,6 @@ type Event = {
   channel: string
   ts: string
   thread_ts?: string
-  user?: string
-  bot_id?: string // Add bot_id to detect bot messages
 }
 
 export async function sendHTTPRequestUsingFetch(
@@ -27,25 +25,8 @@ export async function sendHTTPRequestUsingFetch(
   return result
 }
 
-const processedEvents = new Set<string>() // Store processed events in memory
-
 export async function sendGPTResponse(event: Event) {
-  const { channel, ts, thread_ts, user, bot_id } = event
-
-  // Check if the event was already processed
-  if (processedEvents.has(ts)) {
-    console.log('Event already processed, skipping.')
-    return
-  }
-
-  // Mark this event as processed
-  processedEvents.add(ts)
-
-  // Check if the message was sent by a bot (including itself) to prevent loops
-  if (bot_id) {
-    console.log('Message sent by bot, skipping processing to prevent loop.')
-    return
-  }
+  const { channel, ts, thread_ts } = event
 
   try {
     // Fetch the Slack conversation thread
@@ -58,14 +39,12 @@ export async function sendGPTResponse(event: Event) {
     // Extract the message prompts
     const prompts = await generatePromptFromThread(thread)
 
-    console.log('thread', thread)
-    console.log('prompts', prompts)
-
+    console.log('prompts', prompts, thread)
     // Make the external API request using fetch
     const apiResponse = await sendHTTPRequestUsingFetch(
       'http://lead-source-api.kasawalkthrough.com/api/lead/chat/db',
       {
-        question: prompts[0]?.content,
+        question: prompts.map((prompt) => prompt.content).join(' '),
       }
     )
 
