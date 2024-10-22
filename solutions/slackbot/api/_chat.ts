@@ -20,7 +20,7 @@ export async function sendHTTPRequestUsingFetch(
     },
     body: JSON.stringify(data),
   })
-
+  console.log('REPOSME', response)
   const result = await response.json()
   return result
 }
